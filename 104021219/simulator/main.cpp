@@ -1,12 +1,12 @@
 #include <iostream>
-#include <fstream>
+#include "memory.hpp"
 using namespace std;
 
 int main() {
-    ifstream dimage("dimage.bin", ios::in | ios::binary),
-            iimage("iimage.bin", ios::in | ios::binary);
-    int v;
-    iimage.read((char *) &v, sizeof(int));
-    cout << v << endl;
+    memory mem;
+    mem.load();
+    cout << mem.getPC() << endl;
+    uint32_t c = mem.getCount();
+    for (int i = 0; i < c; ++i) cout << mem.getInstr() << endl;
     return 0;
 }
