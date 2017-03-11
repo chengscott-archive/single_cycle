@@ -1,13 +1,11 @@
-CC=g++ -std=c++11 -O3 -Wall
+CC = g++ -std=c++11 -O3 -Wall
+OBJ = main.o memory.o irfile.o
 
-single_cycle: main.o memory.o
-	$(CC) -o single_cycle main.o memory.o
+single_cycle: ${OBJ}
+	$(CC) -o single_cycle $^
 
-main.o: main.cpp
-	$(CC) -c main.cpp
-
-memory.o: memory.cpp
-	$(CC) -c memory.cpp
+%.o: %.cpp
+	$(CC) -c $^
 
 .PNOHY: clean
 
