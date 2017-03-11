@@ -1,19 +1,19 @@
 #include <iostream>
 #include "memory.hpp"
+#include "regfile.hpp"
 #include "irfile.hpp"
-using namespace std;
 
 int main() {
     memory mem;
     mem.LoadInstr();
     mem.LoadData();
-    for (uint32_t cycle = 0; cycle < 500000; ++cycle) {
+    for (size_t cycle = 0; cycle < 500000; ++cycle) {
         uint32_t instr = mem.getInstr();
-        IR ir(instr);
-        cout << instr << endl;
-        cout << ir.getType() << endl;
-        if (ir.getType() == 'S') break;
+        const char type = IR::getType(instr);
+        if (type == 'R') IR::R_execute(instr);
+        else if (type == 'I') IR::I_execute(instr);
+        else if (type == 'J') IR::J_execute(instr);
+        else if (type == 'S') break;
     }
-
     return 0;
 }

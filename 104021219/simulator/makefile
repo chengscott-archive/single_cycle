@@ -1,5 +1,5 @@
 CC = g++ -std=c++11 -O3 -Wall
-OBJ = main.o memory.o irfile.o
+OBJ = main.o memory.o irfile.o regfile.o
 
 single_cycle: ${OBJ}
 	$(CC) -o single_cycle $^

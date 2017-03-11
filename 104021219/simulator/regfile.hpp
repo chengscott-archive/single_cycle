@@ -10,5 +10,5 @@ public:
 
 private:
     uint32_t reg_[32] = {};
-}
+};
 #endif
