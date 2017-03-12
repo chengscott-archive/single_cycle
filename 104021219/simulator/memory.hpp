@@ -10,6 +10,7 @@ public:
     void LoadInstr();
     void LoadData();
     const uint32_t& getPC() const { return PC_; }
+    void setPC(const uint32_t& rhs) { PC_ = rhs; }
     const uint32_t& getSP() const { return SP_; }
     const size_t& getICount() const { return icount_; }
     const size_t& getDCount() const { return dcount_; }

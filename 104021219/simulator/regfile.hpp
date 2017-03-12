@@ -3,9 +3,8 @@
 class regfile {
 public:
     const uint32_t& getReg(const size_t& idx) const { return reg_[idx]; }
-    void setReg(const size_t& idx, const uint32_t& val) {
-        if (idx == 0) throw "Write $0 Error";
-        reg_[idx] = val;
+    void setReg(const size_t& idx, const uint32_t& rhs) {
+        if (idx != 0) reg_[idx] = rhs;
     }
 
 private:

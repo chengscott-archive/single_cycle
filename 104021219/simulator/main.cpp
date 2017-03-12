@@ -6,54 +6,77 @@ int main() {
     for (size_t cycle = 0; cycle < 500000; ++cycle) {
         uint32_t instr = mem.getInstr();
         const char type = IR::getType(instr);
-        if (type == 'R') R_execute(instr);
-        else if (type == 'I') I_execute(instr);
-        else if (type == 'J') J_execute(instr);
-        else if (type == 'S') break;
+        try {
+            if (type == 'R') R_execute(instr);
+            else if (type == 'I') I_execute(instr);
+            else if (type == 'J') J_execute(instr);
+            else if (type == 'S') break;
+        } catch (uint32_t ex) {
+            // dump error
+        }
     }
     return 0;
 }
 
 void R_execute(const uint32_t& rhs) {
     const IR::R_type instr = IR::R_decode(rhs);
-    const uint32_t funct = instr.funct;
-    if (funct == 0x20) {
-        // add
-    } else if (funct == 0x21) {
-        // addu
-    } else if (funct == 0x22) {
-        // sub
-    } else if (funct == 0x24) {
-        // and
-    } else if (funct == 0x25) {
-        // or
-    } else if (funct == 0x26) {
-        // xor
-    } else if (funct == 0x27) {
-        // nor
-    } else if (funct == 0x28) {
-        // nand
-    } else if (funct == 0x2A) {
-        // slt
-    } else if (funct == 0x00) {
-        // sll
-        const uint32_t rt = reg.getReg(instr.rt);
-        reg.setReg(instr.rd, rt << instr.shamt);
-    } else if (funct == 0x02) {
-        // srl
-    } else if (funct == 0x03) {
-        // sra
-    } else if (funct == 0x08) {
+    const uint32_t funct = instr.funct,
+            rs = reg.getReg(instr.rs),
+            rt = reg.getReg(instr.rt);
+    uint32_t res = 0, err = 0;
+    if (funct == 0x08) {
         // jr
+        mem.setPC(rs);
     } else if (funct == 0x18) {
-        // mult
+        // TODO:mult
     } else if (funct == 0x19) {
-        // multu
-    } else if (funct == 0x10) {
-        // mfhi
-    } else if (funct == 0x12) {
-        // mflo
+        // TODO:multu
     }
+    else {
+        const uint32_t rd = reg.getReg(instr.rd);
+        if (funct == 0x20) {
+            // TODO:add
+        } else if (funct == 0x21) {
+            // addu
+            res = rs + rt;
+            if (res < rs) err |= ERR_NUMBER_OVERFLOW;
+        } else if (funct == 0x22) {
+            // TODO:sub
+        } else if (funct == 0x24) {
+            // and
+            res = rs & rt;
+        } else if (funct == 0x25) {
+            // or
+            res = rs | rt;
+        } else if (funct == 0x26) {
+            // xor
+            res = rs ^ rt;
+        } else if (funct == 0x27) {
+            // nor
+            res = ~(rs | rt);
+        } else if (funct == 0x28) {
+            // nand
+            res = ~(rs & rt);
+        } else if (funct == 0x2A) {
+            // slt
+            res = rs < rt ? 1 : 0;
+        } else if (funct == 0x00) {
+            // sll
+            res = rt << instr.shamt;
+        } else if (funct == 0x02) {
+            // srl
+            res = rt >> instr.shamt;
+        } else if (funct == 0x03) {
+            // TODO:sra
+        } else if (funct == 0x10) {
+            // TODO:mfhi
+        } else if (funct == 0x12) {
+            // TODO:mflo
+        }
+        if (rd == 0) err |= ERR_WRITE_REG_ZERO;
+        else reg.setReg(rd, res);
+    }
+    if (err != 0) throw err;
 }
 
 void I_execute(const uint32_t& rhs) {
