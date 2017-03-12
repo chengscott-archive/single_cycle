@@ -123,10 +123,10 @@ void I_execute(const uint32_t& rhs) {
 
 void J_execute(const uint32_t& rhs) {
     const IR::J_type instr = IR::J_decode(rhs);
-    const uint32_t opcode = instr.opcode;
-    if (opcode == 0x02) {
-        // j
-    } else if (opcode == 0x03) {
+    if (instr.opcode == 0x03) {
         // jal
+        reg.setReg(31, mem.getPC());
     }
+    // j && jal: PC = {(PC+4)[31:28], C, 2'b0}
+    mem.setPC((mem.getPC() & 0xf0000000) | (instr.C << 2));
 }
