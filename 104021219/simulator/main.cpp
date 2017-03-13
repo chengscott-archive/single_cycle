@@ -2,7 +2,10 @@
 
 int main() {
     mem.LoadInstr();
-    mem.LoadData();
+    uint32_t SP = mem.LoadData();
+    reg.setReg(29, SP);
+    reg.dump();
+    printf("PC: 0x%08x\n\n\n", mem.getPC());
     for (size_t cycle = 0; cycle < 500000; ++cycle) {
         uint32_t instr = mem.getInstr();
         const char type = IR::getType(instr);
@@ -11,14 +14,34 @@ int main() {
             else if (type == 'I') I_execute(instr);
             else if (type == 'J') J_execute(instr);
             else if (type == 'S') break;
+            printf("cycle %zu\n", cycle);
+            reg.dump();
+            printf("PC: 0x%08x\n\n\n", mem.getPC());
         } catch (uint32_t ex) {
             // dump error
+            if (ex & ERR_WRITE_REG_ZERO) {
+                printf("In cycle %zu: Write $0 Error\n", cycle);
+            }
+            if (ex & ERR_NUMBER_OVERFLOW) {
+                printf("In cycle %zu: Number Overflow\n", cycle);
+            }
+            if (ex & ERR_OVERWRTIE_REG_HI_LO) {
+                printf("In cycle %zu: Overwrite HI-LO registers\n", cycle);
+            }
+            if (ex & ERR_ADDRESS_OVERFLOW) {
+                printf("In cycle %zu: Address Overflow\n", cycle);
+                break;
+            }
+            if (ex & ERR_MISALIGNMENT) {
+                printf("In cycle %zu: Misalignment Error\n", cycle);
+                break;
+            }
         }
     }
     return 0;
 }
 
-void R_execute(const uint32_t& rhs) {
+void R_execute(const uint32_t rhs) {
     const IR::R_type instr = IR::R_decode(rhs);
     const uint32_t funct = instr.funct,
             rs = reg.getReg(instr.rs),
@@ -33,15 +56,18 @@ void R_execute(const uint32_t& rhs) {
         // TODO:multu
     }
     else {
-        const uint32_t rd = reg.getReg(instr.rd);
         if (funct == 0x20) {
             // TODO:add
         } else if (funct == 0x21) {
             // addu
             res = rs + rt;
-            if (res < rs) err |= ERR_NUMBER_OVERFLOW;
+            err |= isOverflow(rs, rt);
         } else if (funct == 0x22) {
-            // TODO:sub
+            // sub
+            const uint32_t nrt = ~rt + 1;
+            res = rs + nrt;
+            err |= (nrt == 0x80000000 ? ERR_NUMBER_OVERFLOW : 0);
+            err |= isOverflow(rs, nrt);
         } else if (funct == 0x24) {
             // and
             res = rs & rt;
@@ -73,55 +99,98 @@ void R_execute(const uint32_t& rhs) {
         } else if (funct == 0x12) {
             // TODO:mflo
         }
-        if (rd == 0) err |= ERR_WRITE_REG_ZERO;
-        else reg.setReg(rd, res);
+        if (instr.rd == 0) err |= ERR_WRITE_REG_ZERO;
+        else reg.setReg(instr.rd, res);
     }
     if (err != 0) throw err;
 }
 
-void I_execute(const uint32_t& rhs) {
+void I_execute(const uint32_t rhs) {
     const IR::I_type instr = IR::I_decode(rhs);
-    const uint32_t opcode = instr.opcode;
-    if (opcode == 0x08) {
-        // addi
-    } else if (opcode == 0x09) {
-        // addiu
-    } else if (opcode == 0x23) {
-        // lw
-    } else if (opcode == 0x21) {
-        // lh
-    } else if (opcode == 0x25) {
-        // lhu
-    } else if (opcode == 0x20) {
-        // lb
-    } else if (opcode == 0x24) {
-        // lbu
-    } else if (opcode == 0x2B) {
-        // sw
-    } else if (opcode == 0x29) {
-        // sh
-    } else if (opcode == 0x28) {
-        // sb
-    } else if (opcode == 0x0F) {
-        // lui
-    } else if (opcode == 0x0C) {
-        // andi
-    } else if (opcode == 0x0D) {
-        // ori
-    } else if (opcode == 0x0E) {
-        // nori
-    } else if (opcode == 0x0A) {
-        // slti
-    } else if (opcode == 0x04) {
-        // beq
-    } else if (opcode == 0x05) {
-        // bne
-    } else if (opcode == 0x07) {
-        // bgtz
+    const uint32_t opcode = instr.opcode,
+            rs = reg.getReg(instr.rs),
+            rt = reg.getReg(instr.rt),
+            C = instr.C;
+    uint32_t res = 0, err = 0;
+    if (opcode == 0x04 || opcode == 0x05 || opcode == 0x07) {
+        // beq, bne, bgtz
+        const uint32_t Caddr = BranchAddr(C);
+        res = mem.getPC() + Caddr;
+        err |= isOverflow(mem.getPC(), Caddr);
+        if ((opcode == 0x04 && rs == rt) ||
+                (opcode == 0x05 && rs != rt) ||
+                (opcode == 0x07 && rs > 0))
+            mem.setPC(res);
+    } else {
+        if (instr.rt == 0) err |= ERR_WRITE_REG_ZERO;
+        if (opcode == 0x08) {
+            // addi
+            const uint32_t Cext = SignExt16(C);
+            res = rs + Cext;
+            err |= isOverflow(rs, Cext);
+            reg.setReg(instr.rt, res);
+        } else if (opcode == 0x09) {
+            // addiu
+            const uint32_t Cext = ZeroExt16(C);
+            res = rs + Cext;
+            err |= isOverflow(rs, Cext);
+            reg.setReg(instr.rt, res);
+        } else if (opcode == 0x0F) {
+            // lui
+            reg.setReg(instr.rt, C << 16);
+        } else if (opcode == 0x0C) {
+            // andi
+            reg.setReg(instr.rt, rs & ZeroExt16(C));
+        } else if (opcode == 0x0D) {
+            // ori
+            reg.setReg(instr.rt, rs | ZeroExt16(C));
+        } else if (opcode == 0x0E) {
+            // nori
+            reg.setReg(instr.rt, ~(rs | ZeroExt16(C)));
+        } else if (opcode == 0x0A) {
+            // slti
+            reg.setReg(instr.rt, rs < ZeroExt16(C) ? 1 : 0);
+        }  else {
+            const uint32_t Cext = SignExt16(C);
+            res = rs + Cext;
+            err |= isOverflow(rs, Cext);
+            if (res >= 1024) throw (err | ERR_ADDRESS_OVERFLOW);
+            if (opcode == 0x23) {
+                // lw
+                if (res % 4 != 0) throw (err | ERR_MISALIGNMENT);
+                reg.setReg(instr.rt, mem.loadWord(res));
+            } else if (opcode == 0x21) {
+                // lh
+                if (res % 2 != 0) throw (err | ERR_MISALIGNMENT);
+                reg.setReg(instr.rt, SignExt16(mem.loadHalfWord(res)));
+            } else if (opcode == 0x25) {
+                // lhu
+                if (res % 2 != 0) throw (err | ERR_MISALIGNMENT);
+                reg.setReg(instr.rt, mem.loadHalfWord(res) & 0xfff);
+            } else if (opcode == 0x20) {
+                // lb
+                reg.setReg(instr.rt, SignExt8(mem.loadByte(res)));
+            } else if (opcode == 0x24) {
+                // lbu
+                reg.setReg(instr.rt, mem.loadByte(res) & 0xff);
+            } else if (opcode == 0x2B) {
+                // sw
+                if (res % 4 != 0) throw (err | ERR_MISALIGNMENT);
+                mem.saveWord(res, rt);
+            } else if (opcode == 0x29) {
+                // sh
+                if (res % 2 != 0) throw (err | ERR_MISALIGNMENT);
+                mem.saveHalfWord(res, rt);
+            } else if (opcode == 0x28) {
+                // sb
+                mem.saveByte(res, rt);
+            }
+        }
     }
+    if (err != 0) throw err;
 }
 
-void J_execute(const uint32_t& rhs) {
+void J_execute(const uint32_t rhs) {
     const IR::J_type instr = IR::J_decode(rhs);
     if (instr.opcode == 0x03) {
         // jal

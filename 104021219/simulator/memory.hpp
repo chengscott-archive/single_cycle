@@ -8,19 +8,19 @@ using namespace std;
 class memory {
 public:
     void LoadInstr();
-    void LoadData();
+    uint32_t LoadData();
     const uint32_t& getPC() const { return PC_; }
     void setPC(const uint32_t& rhs) { PC_ = rhs; }
-    const uint32_t& getSP() const { return SP_; }
-    const size_t& getICount() const { return icount_; }
-    const size_t& getDCount() const { return dcount_; }
     const uint32_t getInstr();
-    const uint32_t& getData(const size_t& rhs) const {
-        return data_[rhs];
-    }
+    const uint32_t loadWord(const size_t) const;
+    const uint32_t loadHalfWord(const size_t) const;
+    const uint32_t loadByte(const size_t) const;
+    void saveWord(const size_t, const uint32_t);
+    void saveHalfWord(const size_t, const uint32_t);
+    void saveByte(const size_t, const uint32_t);
 
 private:
-    uint32_t PC_ = 0, PC0_ = 0, SP_ = 0;
+    uint32_t PC_ = 0, PC0_ = 0;
     size_t icount_ = 0, dcount_ = 0;
     vector<uint32_t> instr_;
     uint32_t data_[1024];
