@@ -8,7 +8,12 @@ single_cycle: ${OBJ}
 %.o: %.cpp
 	$(CC) -c $^
 
-.PNOHY: clean
+.PNOHY: run
+run:
+	./single_cycle
+	diff snapshot.rpt diff/snapshot.rpt || exit 0
+	diff error_dump.rpt diff/error_dump.rpt || exit 0
 
+.PHONY: clean
 clean:
 	rm -f single_cycle *.o

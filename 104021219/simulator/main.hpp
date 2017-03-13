@@ -1,4 +1,4 @@
-#include <cstdio>
+#include <fstream>
 #include "memory.hpp"
 #include "regfile.hpp"
 #include "irfile.hpp"
@@ -20,8 +20,10 @@
 #define BranchAddr(C) ((C) >> 15 == 0x0 ? (0x0003ffff & ((C) << 2)) : (0xfffc0000 | ((C) << 2)))
 
 memory mem;
-regfile reg;
+regfile reg, regt;
+FILE *snapshot, *error_dump;
 
+void dump_reg(const size_t);
 void R_execute(const uint32_t);
 void I_execute(const uint32_t);
 void J_execute(const uint32_t);

@@ -1,32 +1,32 @@
 #include "memory.hpp"
 
 void memory::LoadInstr() {
-    ifstream image("iimage.bin", ios::in | ios::binary);
+    FILE* image = fopen("iimage.bin", "rb");
     int v;
-    image.read((char *) &v, sizeof(int));
+    fread(&v, sizeof(int), 1, image);
     PC_ = PC0_ = ToBig(v);
-    image.read((char *) &v, sizeof(int));
+    fread(&v, sizeof(int), 1, image);
     icount_ = ToBig(v);
     for (size_t i = 0; i < icount_; ++i) {
-        image.read((char *) &v, sizeof(int));
+        fread(&v, sizeof(int), 1, image);
         // TODO: stop when read halt
         instr_.push_back(ToBig(v));
     }
-    image.close();
+    fclose(image);
 }
 
 uint32_t memory::LoadData() {
-    ifstream image("dimage.bin", ios::in | ios::binary);
+    FILE* image = fopen("dimage.bin", "rb");
     int v;
-    image.read((char *) &v, sizeof(int));
+    fread(&v, sizeof(int), 1, image);
     uint32_t SP = ToBig(v);
-    image.read((char *) &v, sizeof(int));
+    fread(&v, sizeof(int), 1, image);
     dcount_ = ToBig(v);
-    for (size_t i = 0; i < dcount_; ++i) {
-        image.read((char *) &v, sizeof(int));
-        data_[i] = ToBig(v);
+    for (size_t i = 0; i < 4 * dcount_; ++i) {
+        fread(&v, sizeof(char), 1, image);
+        data_[i] = ToBig(v) >> 24;
     }
-    image.close();
+    fclose(image);
     return SP;
 }
 
@@ -37,28 +37,26 @@ const uint32_t memory::getInstr() {
 }
 
 const uint32_t memory::loadWord(const size_t rhs) const {
-    return data_[rhs] |
-            data_[rhs + 1] << 8 |
-            data_[rhs + 2] << 16 |
-            data_[rhs + 3] << 24;
+    return data_[rhs]  << 24 | data_[rhs + 1] << 16 | data_[rhs + 2] << 8 |
+            data_[rhs + 3];
 }
 const uint32_t memory::loadHalfWord(const size_t rhs) const {
-    return data_[rhs] | data_[rhs + 1] << 8;
+    return data_[rhs] << 8 | data_[rhs + 1];
 }
 const uint32_t memory::loadByte(const size_t rhs) const {
     return data_[rhs];
 }
 
 void memory::saveWord(const size_t lhs, const uint32_t rhs) {
-    data_[lhs] = rhs & 0xff;
-	data_[lhs + 1] = (rhs >> 8) & 0xff;
-	data_[lhs + 2] = (rhs >> 16) & 0xff;
-	data_[lhs + 3] = (rhs >> 24) & 0xff;
+    data_[lhs] = (rhs >> 24) & 0xff;
+	data_[lhs + 1] = (rhs >> 16) & 0xff;
+	data_[lhs + 2] = (rhs >> 8) & 0xff;
+	data_[lhs + 3] = rhs & 0xff;
 }
 
 void memory::saveHalfWord(const size_t lhs, const uint32_t rhs) {
-    data_[lhs] = rhs & 0xff;
-	data_[lhs + 1] = (rhs >> 8) & 0xff;
+    data_[lhs] = (rhs >> 8) & 0xff;
+	data_[lhs + 1] = rhs & 0xff;
 }
 
 void memory::saveByte(const size_t lhs, const uint32_t rhs) {

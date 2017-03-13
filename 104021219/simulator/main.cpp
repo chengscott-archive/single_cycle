@@ -1,12 +1,13 @@
 #include "main.hpp"
 
 int main() {
+    snapshot = fopen("snapshot.rpt", "w");
+    error_dump = fopen("error_dump.rpt", "w");
     mem.LoadInstr();
     uint32_t SP = mem.LoadData();
     reg.setReg(29, SP);
-    reg.dump();
-    printf("PC: 0x%08x\n\n\n", mem.getPC());
-    for (size_t cycle = 0; cycle < 500000; ++cycle) {
+    dump_reg(0);
+    for (size_t cycle = 1; cycle <= 500000; ++cycle) {
         uint32_t instr = mem.getInstr();
         const char type = IR::getType(instr);
         try {
@@ -14,31 +15,43 @@ int main() {
             else if (type == 'I') I_execute(instr);
             else if (type == 'J') J_execute(instr);
             else if (type == 'S') break;
-            printf("cycle %zu\n", cycle);
-            reg.dump();
-            printf("PC: 0x%08x\n\n\n", mem.getPC());
+            dump_reg(cycle);
         } catch (uint32_t ex) {
             // dump error
             if (ex & ERR_WRITE_REG_ZERO) {
-                printf("In cycle %zu: Write $0 Error\n", cycle);
+                fprintf(error_dump, "In cycle %zu: Write $0 Error\n", cycle);
             }
             if (ex & ERR_NUMBER_OVERFLOW) {
-                printf("In cycle %zu: Number Overflow\n", cycle);
+                fprintf(error_dump, "In cycle %zu: Number Overflow\n", cycle);
             }
             if (ex & ERR_OVERWRTIE_REG_HI_LO) {
-                printf("In cycle %zu: Overwrite HI-LO registers\n", cycle);
+                fprintf(error_dump,
+                        "In cycle %zu: Overwrite HI-LO registers\n",
+                        cycle);
             }
             if (ex & ERR_ADDRESS_OVERFLOW) {
-                printf("In cycle %zu: Address Overflow\n", cycle);
+                fprintf(error_dump, "In cycle %zu: Address Overflow\n", cycle);
                 break;
             }
             if (ex & ERR_MISALIGNMENT) {
-                printf("In cycle %zu: Misalignment Error\n", cycle);
+                fprintf(error_dump, "In cycle %zu: Misalignment Error\n", cycle);
                 break;
             }
         }
     }
+    fclose(snapshot);
+    fclose(error_dump);
     return 0;
+}
+
+void dump_reg(const size_t cycle) {
+    fprintf(snapshot, "cycle %zu\n", cycle);
+    for (int i = 0; i < 32; ++i) {
+        if (cycle != 0 && reg.getReg(i) == regt.getReg(i)) continue;
+        fprintf(snapshot, "$%02d: 0x%08X\n", i, reg.getReg(i));
+    }
+    fprintf(snapshot, "PC: 0x%08X\n\n\n", mem.getPC());
+    regt = reg;
 }
 
 void R_execute(const uint32_t rhs) {

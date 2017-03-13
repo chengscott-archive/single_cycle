@@ -1,3 +1,4 @@
 single_cycle
 *.bin
+*.rpt
 *.o
