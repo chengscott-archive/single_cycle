@@ -15,7 +15,6 @@ int main() {
             else if (type == 'I') I_execute(instr);
             else if (type == 'J') J_execute(instr);
             else if (type == 'S') break;
-            dump_reg(cycle);
         } catch (uint32_t ex) {
             // dump error
             if (ex & ERR_WRITE_REG_ZERO) {
@@ -38,6 +37,7 @@ int main() {
                 break;
             }
         }
+        dump_reg(cycle);
     }
     fclose(snapshot);
     fclose(error_dump);
@@ -69,8 +69,15 @@ void R_execute(const uint32_t rhs) {
         mem.setPC(rs);
     } else if (funct == 0x18) {
         // TODO:mult
+        uint64_t m = rs * rt;
+        // err |= isOverflow(rs, rt);
+        bool isOverwrite = reg.setHILO(m >> 32, m & 0x00000000ffffffff);
+        err |= (isOverwrite ? ERR_OVERWRTIE_REG_HI_LO : 0);
     } else if (funct == 0x19) {
-        // TODO:multu
+        // multu
+        uint64_t m = (uint64_t) rs * (uint64_t) rt;
+        bool isOverwrite = reg.setHILO(m >> 32, m & 0x00000000ffffffff);
+        err |= (isOverwrite ? ERR_OVERWRTIE_REG_HI_LO : 0);
     }
     else {
         if (funct == 0x20) {
@@ -114,10 +121,10 @@ void R_execute(const uint32_t rhs) {
             // TODO:sra
         } else if (funct == 0x10) {
             // mfhi
-            res = reg.getHI();
+            res = reg.fetchHI();
         } else if (funct == 0x12) {
             // mflo
-            res = reg.getLO();
+            res = reg.fetchLO();
         }
         if (instr.rd == 0) err |= ERR_WRITE_REG_ZERO;
         else reg.setReg(instr.rd, res);
@@ -151,7 +158,7 @@ void I_execute(const uint32_t rhs) {
             reg.setReg(instr.rt, res);
         } else if (opcode == 0x09) {
             // addiu
-            reg.setReg(instr.rt, rs + ZeroExt16(C));
+            reg.setReg(instr.rt, rs + SignExt16(C));
         } else if (opcode == 0x0F) {
             // lui
             reg.setReg(instr.rt, C << 16);
@@ -183,7 +190,7 @@ void I_execute(const uint32_t rhs) {
             } else if (opcode == 0x25) {
                 // lhu
                 if (res % 2 != 0) throw (err | ERR_MISALIGNMENT);
-                reg.setReg(instr.rt, mem.loadHalfWord(res) & 0xfff);
+                reg.setReg(instr.rt, mem.loadHalfWord(res) & 0xffff);
             } else if (opcode == 0x20) {
                 // lb
                 reg.setReg(instr.rt, SignExt8(mem.loadByte(res)));

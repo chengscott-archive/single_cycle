@@ -14,6 +14,11 @@ run:
 	diff snapshot.rpt diff/snapshot.rpt || exit 0
 	diff error_dump.rpt diff/error_dump.rpt || exit 0
 
+.PNOHY: golden
+golden:
+	./../../archiTA/simulator/single_cycle
+	mv *.rpt diff/
+
 .PHONY: clean
 clean:
-	rm -f single_cycle *.o
+	rm -f single_cycle *.o *.rpt
