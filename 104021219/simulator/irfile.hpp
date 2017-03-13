@@ -3,21 +3,19 @@
 #include <cstdint>
 
 namespace IR {
-    struct IR_type {};
-
-    struct R_type : IR_type {
+    struct R_type {
     	uint32_t opcode, rs, rt, rd, shamt, funct;
     };
 
-    struct I_type : IR_type {
+    struct I_type {
     	uint32_t opcode, rs, rt, C;
     };
 
-    struct J_type : IR_type {
+    struct J_type {
     	uint32_t opcode, C;
     };
 
-    struct S_type : IR_type {
+    struct S_type {
     	uint32_t opcode, C;
     };
 

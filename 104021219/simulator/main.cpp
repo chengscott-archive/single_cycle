@@ -47,9 +47,13 @@ int main() {
 void dump_reg(const size_t cycle) {
     fprintf(snapshot, "cycle %zu\n", cycle);
     for (int i = 0; i < 32; ++i) {
-        if (cycle != 0 && reg.getReg(i) == regt.getReg(i)) continue;
-        fprintf(snapshot, "$%02d: 0x%08X\n", i, reg.getReg(i));
+        if (cycle == 0 || reg.getReg(i) != regt.getReg(i))
+            fprintf(snapshot, "$%02d: 0x%08X\n", i, reg.getReg(i));
     }
+    if (cycle == 0 || reg.getHI() != regt.getHI())
+        fprintf(snapshot, "$HI: 0x%08X\n", reg.getHI());
+    if (cycle == 0 || reg.getLO() != regt.getLO())
+        fprintf(snapshot, "$LO: 0x%08X\n", reg.getLO());
     fprintf(snapshot, "PC: 0x%08X\n\n\n", mem.getPC());
     regt = reg;
 }
@@ -70,11 +74,12 @@ void R_execute(const uint32_t rhs) {
     }
     else {
         if (funct == 0x20) {
-            // TODO:add
+            // add
+            res = rs + rt;
+            err |= isOverflow(rs, rt);
         } else if (funct == 0x21) {
             // addu
             res = rs + rt;
-            err |= isOverflow(rs, rt);
         } else if (funct == 0x22) {
             // sub
             const uint32_t nrt = ~rt + 1;
@@ -108,9 +113,11 @@ void R_execute(const uint32_t rhs) {
         } else if (funct == 0x03) {
             // TODO:sra
         } else if (funct == 0x10) {
-            // TODO:mfhi
+            // mfhi
+            res = reg.getHI();
         } else if (funct == 0x12) {
-            // TODO:mflo
+            // mflo
+            res = reg.getLO();
         }
         if (instr.rd == 0) err |= ERR_WRITE_REG_ZERO;
         else reg.setReg(instr.rd, res);
@@ -144,10 +151,7 @@ void I_execute(const uint32_t rhs) {
             reg.setReg(instr.rt, res);
         } else if (opcode == 0x09) {
             // addiu
-            const uint32_t Cext = ZeroExt16(C);
-            res = rs + Cext;
-            err |= isOverflow(rs, Cext);
-            reg.setReg(instr.rt, res);
+            reg.setReg(instr.rt, rs + ZeroExt16(C));
         } else if (opcode == 0x0F) {
             // lui
             reg.setReg(instr.rt, C << 16);

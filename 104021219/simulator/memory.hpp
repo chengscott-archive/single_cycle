@@ -2,7 +2,6 @@
 #define MEMORY_DEF
 #include <fstream>
 #include <vector>
-using namespace std;
 #define ToBig(x) (__builtin_bswap32(x))
 
 class memory {
@@ -22,7 +21,7 @@ public:
 private:
     uint32_t PC_ = 0, PC0_ = 0;
     size_t icount_ = 0, dcount_ = 0;
-    vector<uint32_t> instr_;
+    std::vector<uint32_t> instr_;
     uint32_t data_[1024];
 };
 #endif
