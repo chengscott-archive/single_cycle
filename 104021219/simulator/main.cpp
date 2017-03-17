@@ -72,9 +72,9 @@ void R_execute(const uint32_t rhs) {
         // jr
         mem.setPC(rs);
     } else if (funct == 0x18) {
-        // TODO:mult
+        // mult
         uint64_t m = rs * rt;
-        // err |= isOverflow(rs, rt);
+        err |= isMultiOverflow(rs, rt, m);
         bool isOverwrite = reg.setHILO(m >> 32, m & 0x00000000ffffffff);
         err |= (isOverwrite ? ERR_OVERWRTIE_REG_HI_LO : 0);
     } else if (funct == 0x19) {
@@ -91,7 +91,7 @@ void R_execute(const uint32_t rhs) {
         if (funct == 0x20) {
             // add
             res = rs + rt;
-            err |= isOverflow(rs, rt);
+            err |= isOverflow(rs, rt, res);
         } else if (funct == 0x21) {
             // addu
             res = rs + rt;
@@ -100,7 +100,7 @@ void R_execute(const uint32_t rhs) {
             const uint32_t nrt = ~rt + 1;
             res = rs + nrt;
             err |= (nrt == 0x80000000 ? ERR_NUMBER_OVERFLOW : 0);
-            err |= isOverflow(rs, nrt);
+            err |= isOverflow(rs, nrt, res);
         } else if (funct == 0x24) {
             // and
             res = rs & rt;
@@ -121,9 +121,10 @@ void R_execute(const uint32_t rhs) {
             res = rs < rt ? 1 : 0;
         } else if (funct == 0x02) {
             // srl
-            res = rt >> instr.shamt;
+            res = (rt >> instr.shamt) & 0x7fffffff;
         } else if (funct == 0x03) {
-            // TODO:sra
+            // sra
+            res = rt >> instr.shamt;
         } else if (funct == 0x10) {
             // mfhi
             res = reg.fetchHI();
@@ -148,7 +149,7 @@ void I_execute(const uint32_t rhs) {
         // beq, bne, bgtz
         const uint32_t Caddr = BranchAddr(C);
         res = mem.getPC() + Caddr;
-        err |= isOverflow(mem.getPC(), Caddr);
+        err |= isOverflow(mem.getPC(), Caddr, res);
         if ((opcode == 0x04 && rs == rt) ||
                 (opcode == 0x05 && rs != rt) ||
                 (opcode == 0x07 && rs > 0))
@@ -159,7 +160,7 @@ void I_execute(const uint32_t rhs) {
             // addi
             const uint32_t Cext = SignExt16(C);
             res = rs + Cext;
-            err |= isOverflow(rs, Cext);
+            err |= isOverflow(rs, Cext, res);
             reg.setReg(instr.rt, res);
         } else if (opcode == 0x09) {
             // addiu
@@ -182,7 +183,7 @@ void I_execute(const uint32_t rhs) {
         }  else {
             const uint32_t Cext = SignExt16(C);
             res = rs + Cext;
-            err |= isOverflow(rs, Cext);
+            err |= isOverflow(rs, Cext, res);
             if (res >= 1024) throw (err | ERR_ADDRESS_OVERFLOW);
             if (opcode == 0x23) {
                 // lw

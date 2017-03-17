@@ -14,8 +14,16 @@
 #define SignExt8(C) (((C) >> 7 == 0x0) ? ((C) & 0x000000ff) : ((C) | 0xffffff00))
 // 16-bit C zero extend to 32-bit
 #define ZeroExt16(C) ((C) & 0x0000ffff)
-// check if a+b overflows
-#define isOverflow(a, b) (((((a) >> 31)^((b) >> 31)) == 0) && ((((a) >> 31)^(((a) + (b)) >> 31)) == 1) ? ERR_NUMBER_OVERFLOW : 0)
+// check if a+b overflow
+#define isOverflow(a, b, c)\
+    (((int32_t(a) > 0 && int32_t(b) > 0 && int32_t(c) <= 0) ||\
+    (int32_t(a) < 0 && int32_t(b) < 0 && int32_t(c) >= 0)) ?\
+    ERR_NUMBER_OVERFLOW : 0)
+// check if a*b overflow
+#define isMultiOverflow(a, b, m)\
+    (((int64_t(a) > 0 && int64_t(b) > 0 && int64_t(m) <= 0) ||\
+    (int64_t(a) < 0 && int64_t(b) < 0 && int64_t(m) >= 0)) ?\
+    ERR_NUMBER_OVERFLOW : 0)
 // {14'{C[15]}, C, 2'b0}
 #define BranchAddr(C) ((C) >> 15 == 0x0 ? (0x0003ffff & ((C) << 2)) : (0xfffc0000 | ((C) << 2)))
 

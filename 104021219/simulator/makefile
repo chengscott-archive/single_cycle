@@ -5,7 +5,7 @@ archiTA = ../../archiTA
 goldensim = $(archiTA)/simulator/single_cycle
 testcase = $(archiTA)/testcase/open_testcase
 
-all: clean single_cycle run
+all: single_cycle
 
 single_cycle: ${OBJ}
 	$(CC) -o single_cycle $^
@@ -14,7 +14,7 @@ single_cycle: ${OBJ}
 	$(CC) -c $^
 
 .PNOHY: run
-run: golden single_cycle
+run: clean golden single_cycle
 	./single_cycle
 	diff snapshot.rpt diff/snapshot.rpt || exit 0
 	diff error_dump.rpt diff/error_dump.rpt || exit 0
@@ -25,6 +25,7 @@ golden: dimage.bin iimage.bin
 	mv *.rpt diff/
 
 .PNOHY: test
+test: clean single_cycle
 test: opentest-branch opentest-fib_dp opentest-func opentest-mult opentest-recur
 	echo 'Finish Test!!!'
 

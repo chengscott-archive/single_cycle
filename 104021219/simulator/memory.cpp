@@ -9,8 +9,7 @@ void memory::LoadInstr() {
     icount_ = ToBig(v);
     for (size_t i = 0; i < icount_; ++i) {
         fread(&v, sizeof(int), 1, image);
-        // TODO: stop when read halt
-        instr_.push_back(ToBig(v));
+        instr_[i] = ToBig(v);
     }
     fclose(image);
 }
