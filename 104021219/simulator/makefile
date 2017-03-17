@@ -25,17 +25,16 @@ golden: dimage.bin iimage.bin
 	mv *.rpt diff/
 
 .PNOHY: test
-test: test-branch test-fib_dp test-func test-mult test-recur
+test: opentest-branch opentest-fib_dp opentest-func opentest-mult opentest-recur
 	echo 'Finish Test!!!'
 
-test-%: single_cycle
-	cp $(testcase)/$(subst test-,,$@)/*.bin .
+opentest-%: single_cycle
+	cp $(testcase)/$(subst opentest-,,$@)/*.bin .
 	./$(goldensim)
 	mv *.rpt diff/
 	./single_cycle
-	diff snapshot.rpt diff/snapshot.rpt || exit 0
-	diff error_dump.rpt diff/error_dump.rpt || exit 0
-	rm *.bin
+	diff snapshot.rpt diff/snapshot.rpt
+	diff error_dump.rpt diff/error_dump.rpt
 
 .PHONY: clean
 clean:

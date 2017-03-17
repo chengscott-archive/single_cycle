@@ -37,7 +37,7 @@ const uint32_t memory::getInstr() {
 }
 
 const uint32_t memory::loadWord(const size_t rhs) const {
-    return data_[rhs]  << 24 | data_[rhs + 1] << 16 | data_[rhs + 2] << 8 |
+    return data_[rhs] << 24 | data_[rhs + 1] << 16 | data_[rhs + 2] << 8 |
             data_[rhs + 3];
 }
 const uint32_t memory::loadHalfWord(const size_t rhs) const {

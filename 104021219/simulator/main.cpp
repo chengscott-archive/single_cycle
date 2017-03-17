@@ -15,6 +15,10 @@ int main() {
             else if (type == 'I') I_execute(instr);
             else if (type == 'J') J_execute(instr);
             else if (type == 'S') break;
+            else {
+                printf("illegal instruction found at 0x%08X\n", mem.getPC());
+                break;
+            }
         } catch (uint32_t ex) {
             // dump error
             if (ex & ERR_WRITE_REG_ZERO) {
@@ -78,8 +82,12 @@ void R_execute(const uint32_t rhs) {
         uint64_t m = (uint64_t) rs * (uint64_t) rt;
         bool isOverwrite = reg.setHILO(m >> 32, m & 0x00000000ffffffff);
         err |= (isOverwrite ? ERR_OVERWRTIE_REG_HI_LO : 0);
-    }
-    else {
+    } else if (funct == 0x00) {
+        // sll
+        if (instr.rd == 0 && !(rt == 0 && instr.shamt == 0))
+            err |= ERR_WRITE_REG_ZERO;
+        else reg.setReg(instr.rd, rt << instr.shamt);
+    } else {
         if (funct == 0x20) {
             // add
             res = rs + rt;
@@ -111,9 +119,6 @@ void R_execute(const uint32_t rhs) {
         } else if (funct == 0x2A) {
             // slt
             res = rs < rt ? 1 : 0;
-        } else if (funct == 0x00) {
-            // sll
-            res = rt << instr.shamt;
         } else if (funct == 0x02) {
             // srl
             res = rt >> instr.shamt;

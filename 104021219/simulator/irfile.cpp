@@ -2,10 +2,19 @@
 
 char IR::getType(const uint32_t& rhs) {
     uint32_t opcode = (rhs >> 26) & 0x3f;
-    if (opcode == 0x0) return 'R';
-    else if (opcode == 0x2 || opcode == 0x3) return 'J';
-    else if (opcode == 0x3f) return 'S';
-    return 'I';
+    switch (opcode) {
+        case 0x0:
+            return 'R';
+        case 0x2: case 0x3:
+            return 'J';
+        case 0x3f:
+            return 'S';
+        case 0x08: case 0x09: case 0x23: case 0x21: case 0x25: case 0x20:
+        case 0x24: case 0x2B: case 0x29: case 0x28: case 0x0F: case 0x0C:
+        case 0x0D: case 0x0E: case 0x0A: case 0x04: case 0x05: case 0x07:
+            return 'I';
+    }
+    return 'F';
 }
 
 IR::R_type IR::R_decode(const uint32_t& rhs) {
