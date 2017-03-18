@@ -3,7 +3,6 @@ CC = g++ -std=c++11 -g -Wall
 OBJ = main.o memory.o irfile.o
 archiTA = ../../archiTA
 goldensim = $(archiTA)/simulator/single_cycle
-testcase = $(archiTA)/testcase
 
 all: single_cycle
 
@@ -26,25 +25,7 @@ golden: dimage.bin iimage.bin
 
 .PNOHY: test
 test: clean single_cycle
-test: opentest-branch opentest-fib_dp opentest-func opentest-mult opentest-recur
-	echo 'Finish Test!!!'
-
-opentest-%: single_cycle
-	cp $(testcase)/open_testcase/$(subst opentest-,,$@)/*.bin .
-	./$(goldensim)
-	mv *.rpt diff/
-	./single_cycle
-	diff snapshot.rpt diff/snapshot.rpt
-	diff error_dump.rpt diff/error_dump.rpt
-
-.PHONY: ilms-test
-stutest-%: clean single_cycle
-	cp $(testcase)/stu_testcase/$(subst stutest-,,$@)/*.bin .
-	-./$(goldensim)
-	mv *.rpt diff/
-	./single_cycle
-	diff snapshot.rpt diff/snapshot.rpt
-	diff error_dump.rpt diff/error_dump.rpt
+	make -f makefile.test
 
 .PHONY: clean
 clean:

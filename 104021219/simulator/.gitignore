@@ -1,3 +1,5 @@
+makefile.test
+# output
 single_cycle
 *.bin
 *.rpt
