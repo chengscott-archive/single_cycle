@@ -72,35 +72,33 @@ void R_execute(const uint32_t rhs) {
         // jr
         mem.setPC(rs);
     } else if (funct == 0x18) {
-        // mult
-        uint64_t m = rs * rt;
+        // mult (signed)
+        int64_t m = int32_t(rs) * int32_t(rt);
         err |= isMultiOverflow(rs, rt, m);
         bool isOverwrite = reg.setHILO(m >> 32, m & 0x00000000ffffffff);
         err |= (isOverwrite ? ERR_OVERWRTIE_REG_HI_LO : 0);
     } else if (funct == 0x19) {
         // multu
-        uint64_t m = (uint64_t) rs * (uint64_t) rt;
+        uint64_t m = uint64_t(rs) * uint64_t(rt);
         bool isOverwrite = reg.setHILO(m >> 32, m & 0x00000000ffffffff);
         err |= (isOverwrite ? ERR_OVERWRTIE_REG_HI_LO : 0);
     } else if (funct == 0x00) {
-        // sll
+        // sll, NOP
         if (instr.rd == 0 && !(rt == 0 && instr.shamt == 0))
             err |= ERR_WRITE_REG_ZERO;
         else reg.setReg(instr.rd, rt << instr.shamt);
     } else {
         if (funct == 0x20) {
-            // add
-            res = rs + rt;
+            // add (signed)
+            res = int32_t(rs) + int32_t(rt);
             err |= isOverflow(rs, rt, res);
         } else if (funct == 0x21) {
             // addu
             res = rs + rt;
         } else if (funct == 0x22) {
-            // sub
-            const uint32_t nrt = ~rt + 1;
-            res = rs + nrt;
-            err |= (nrt == 0x80000000 ? ERR_NUMBER_OVERFLOW : 0);
-            err |= isOverflow(rs, nrt, res);
+            // sub (signed)
+            res = int32_t(rs) - int32_t(rt);
+            err |= isOverflow(rs, - int32_t(rt), res);
         } else if (funct == 0x24) {
             // and
             res = rs & rt;
@@ -117,14 +115,14 @@ void R_execute(const uint32_t rhs) {
             // nand
             res = ~(rs & rt);
         } else if (funct == 0x2A) {
-            // slt
-            res = rs < rt ? 1 : 0;
+            // slt (signed)
+            res = int32_t(rs) < int32_t(rt) ? 1 : 0;
         } else if (funct == 0x02) {
             // srl
-            res = (rt >> instr.shamt) & 0x7fffffff;
+            res = rt >> instr.shamt;
         } else if (funct == 0x03) {
             // sra
-            res = rt >> instr.shamt;
+            res = int32_t(rt) >> instr.shamt;
         } else if (funct == 0x10) {
             // mfhi
             res = reg.fetchHI();
@@ -146,9 +144,11 @@ void I_execute(const uint32_t rhs) {
             C = instr.C;
     uint32_t res = 0, err = 0;
     if (opcode == 0x04 || opcode == 0x05 || opcode == 0x07) {
-        // beq, bne, bgtz
-        const uint32_t Caddr = BranchAddr(C);
-        res = mem.getPC() + Caddr;
+        // beq, bne, bgtz (signed)
+        // {14'{C[15]}, C, 2'b0}
+        const int32_t Caddr = C >> 15 == 0x0 ? (0x0003ffff & (C << 2)) :
+                (0xfffc0000 | (C << 2));
+        res = int32_t(mem.getPC()) + Caddr;
         err |= isOverflow(mem.getPC(), Caddr, res);
         if ((opcode == 0x04 && rs == rt) ||
                 (opcode == 0x05 && rs != rt) ||
@@ -157,9 +157,9 @@ void I_execute(const uint32_t rhs) {
     } else {
         if (instr.rt == 0) err |= ERR_WRITE_REG_ZERO;
         if (opcode == 0x08) {
-            // addi
-            const uint32_t Cext = SignExt16(C);
-            res = rs + Cext;
+            // addi (signed)
+            const int32_t Cext = SignExt16(C);
+            res = int32_t(rs) + Cext;
             err |= isOverflow(rs, Cext, res);
             reg.setReg(instr.rt, res);
         } else if (opcode == 0x09) {
@@ -178,11 +178,11 @@ void I_execute(const uint32_t rhs) {
             // nori
             reg.setReg(instr.rt, ~(rs | ZeroExt16(C)));
         } else if (opcode == 0x0A) {
-            // slti
-            reg.setReg(instr.rt, rs < ZeroExt16(C) ? 1 : 0);
+            // slti (signed)
+            reg.setReg(instr.rt, int32_t(rs) < int32_t(SignExt16(C)) ? 1 : 0);
         }  else {
-            const uint32_t Cext = SignExt16(C);
-            res = rs + Cext;
+            const int32_t Cext = SignExt16(C);
+            res = int32_t(rs) + Cext;
             err |= isOverflow(rs, Cext, res);
             if (res >= 1024) throw (err | ERR_ADDRESS_OVERFLOW);
             if (opcode == 0x23) {

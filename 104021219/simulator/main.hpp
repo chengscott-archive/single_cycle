@@ -24,8 +24,6 @@
     (((int64_t(a) > 0 && int64_t(b) > 0 && int64_t(m) <= 0) ||\
     (int64_t(a) < 0 && int64_t(b) < 0 && int64_t(m) >= 0)) ?\
     ERR_NUMBER_OVERFLOW : 0)
-// {14'{C[15]}, C, 2'b0}
-#define BranchAddr(C) ((C) >> 15 == 0x0 ? (0x0003ffff & ((C) << 2)) : (0xfffc0000 | ((C) << 2)))
 
 memory mem;
 regfile reg, regt;
