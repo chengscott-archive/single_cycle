@@ -16,8 +16,8 @@ single_cycle: ${OBJ}
 .PNOHY: run
 run: clean golden single_cycle
 	./single_cycle
-	diff snapshot.rpt diff/snapshot.rpt || exit 0
-	diff error_dump.rpt diff/error_dump.rpt || exit 0
+	diff snapshot.rpt diff/snapshot.rpt
+	diff error_dump.rpt diff/error_dump.rpt
 
 .PNOHY: golden
 golden: dimage.bin iimage.bin
@@ -38,13 +38,13 @@ opentest-%: single_cycle
 	diff error_dump.rpt diff/error_dump.rpt
 
 .PHONY: ilms-test
-ilms-test: SHELL=/bin/bash
-ilms-test: clean single_cycle
-	cp $(testcase)/stu_testcase/ilms/*.bin .
-	cp $(testcase)/stu_testcase/ilms/*.rpt diff/
+stutest-%: clean single_cycle
+	cp $(testcase)/stu_testcase/$(subst stutest-,,$@)/*.bin .
+	-./$(goldensim)
+	mv *.rpt diff/
 	./single_cycle
-	diff <(head -n 1300 snapshot.rpt) diff/snapshot.rpt || exit 0
-	diff error_dump.rpt diff/error_dump.rpt || exit 0
+	diff snapshot.rpt diff/snapshot.rpt
+	diff error_dump.rpt diff/error_dump.rpt
 
 .PHONY: clean
 clean:

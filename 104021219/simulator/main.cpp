@@ -34,12 +34,11 @@ int main() {
             }
             if (ex & ERR_ADDRESS_OVERFLOW) {
                 fprintf(error_dump, "In cycle %zu: Address Overflow\n", cycle);
-                break;
             }
             if (ex & ERR_MISALIGNMENT) {
                 fprintf(error_dump, "In cycle %zu: Misalignment Error\n", cycle);
-                break;
             }
+            if (ex & HALT) break;
         }
         dump_reg(cycle);
     }
@@ -152,7 +151,7 @@ void I_execute(const uint32_t rhs) {
         err |= isOverflow(mem.getPC(), Caddr, res);
         if ((opcode == 0x04 && rs == rt) ||
                 (opcode == 0x05 && rs != rt) ||
-                (opcode == 0x07 && rs > 0))
+                (opcode == 0x07 && int32_t(rs) > 0))
             mem.setPC(res);
     } else {
         if (instr.rt == 0) err |= ERR_WRITE_REG_ZERO;
@@ -183,36 +182,58 @@ void I_execute(const uint32_t rhs) {
         }  else {
             const int32_t Cext = SignExt16(C);
             res = int32_t(rs) + Cext;
-            err |= isOverflow(rs, Cext, res);
-            if (res >= 1024) throw (err | ERR_ADDRESS_OVERFLOW);
             if (opcode == 0x23) {
                 // lw
-                if (res % 4 != 0) throw (err | ERR_MISALIGNMENT);
+                err |= isOverflow(rs, Cext + 3, res);
+                err |= (res + 3 >= 1024 ? ERR_ADDRESS_OVERFLOW : 0);
+                err |= (res % 4 != 0 ? ERR_MISALIGNMENT : 0);
+                if (err & HALT) throw err;
                 reg.setReg(instr.rt, mem.loadWord(res));
             } else if (opcode == 0x21) {
                 // lh
-                if (res % 2 != 0) throw (err | ERR_MISALIGNMENT);
+                err |= isOverflow(rs, Cext + 1, res);
+                err |= (res + 1 >= 1024 ? ERR_ADDRESS_OVERFLOW : 0);
+                err |= (res % 2 != 0 ? ERR_MISALIGNMENT : 0);
+                if (err & HALT) throw err;
                 reg.setReg(instr.rt, SignExt16(mem.loadHalfWord(res)));
             } else if (opcode == 0x25) {
                 // lhu
-                if (res % 2 != 0) throw (err | ERR_MISALIGNMENT);
+                err |= isOverflow(rs, Cext + 1, res);
+                err |= (res + 1 >= 1024 ? ERR_ADDRESS_OVERFLOW : 0);
+                err |= (res % 2 != 0 ? ERR_MISALIGNMENT : 0);
+                if (err & HALT) throw err;
                 reg.setReg(instr.rt, mem.loadHalfWord(res) & 0xffff);
             } else if (opcode == 0x20) {
                 // lb
+                err |= isOverflow(rs, Cext, res);
+                err |= (res >= 1024 ? ERR_ADDRESS_OVERFLOW : 0);
+                if (err & HALT) throw err;
                 reg.setReg(instr.rt, SignExt8(mem.loadByte(res)));
             } else if (opcode == 0x24) {
                 // lbu
+                err |= isOverflow(rs, Cext, res);
+                err |= (res >= 1024 ? ERR_ADDRESS_OVERFLOW : 0);
+                if (err & HALT) throw err;
                 reg.setReg(instr.rt, mem.loadByte(res) & 0xff);
             } else if (opcode == 0x2B) {
                 // sw
-                if (res % 4 != 0) throw (err | ERR_MISALIGNMENT);
+                err |= isOverflow(rs, Cext + 3, res);
+                err |= (res + 3 >= 1024 ? ERR_ADDRESS_OVERFLOW : 0);
+                err |= (res % 4 != 0 ? ERR_MISALIGNMENT : 0);
+                if (err & HALT) throw err;
                 mem.saveWord(res, rt);
             } else if (opcode == 0x29) {
                 // sh
-                if (res % 2 != 0) throw (err | ERR_MISALIGNMENT);
+                err |= isOverflow(rs, Cext + 1, res);
+                err |= (res + 1 >= 1024 ? ERR_ADDRESS_OVERFLOW : 0);
+                err |= (res % 2 != 0 ? ERR_MISALIGNMENT : 0);
+                if (err & HALT) throw err;
                 mem.saveHalfWord(res, rt);
             } else if (opcode == 0x28) {
                 // sb
+                err |= isOverflow(rs, Cext, res);
+                err |= (res >= 1024 ? ERR_ADDRESS_OVERFLOW : 0);
+                if (err & HALT) throw err;
                 mem.saveByte(res, rt);
             }
         }
