@@ -72,8 +72,7 @@ void R_execute(const uint32_t rhs) {
         mem.setPC(rs);
     } else if (funct == 0x18) {
         // mult (signed)
-        int64_t m = int32_t(rs) * int32_t(rt);
-        err |= isMultiOverflow(rs, rt, m);
+        int64_t m = SignExt32(rs) * SignExt32(rt);
         bool isOverwrite = reg.setHILO(m >> 32, m & 0x00000000ffffffff);
         err |= (isOverwrite ? ERR_OVERWRTIE_REG_HI_LO : 0);
     } else if (funct == 0x19) {
