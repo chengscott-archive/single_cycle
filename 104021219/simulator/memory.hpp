@@ -1,5 +1,4 @@
-#ifndef MEMORY_DEF
-#define MEMORY_DEF
+#pragma once
 #include <fstream>
 #define ToBig(x) (__builtin_bswap32(x))
 
@@ -22,4 +21,3 @@ private:
     size_t icount_ = 0, dcount_ = 0;
     uint32_t instr_[1024] = {}, data_[4096] = {};
 };
-#endif

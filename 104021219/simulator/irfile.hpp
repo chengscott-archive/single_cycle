@@ -1,5 +1,4 @@
-#ifndef IRFILE_DEF
-#define IRFILE_DEF
+#pragma once
 #include <cstdint>
 
 namespace IR {
@@ -25,4 +24,3 @@ namespace IR {
     J_type J_decode(const uint32_t&);
     S_type S_decode(const uint32_t&);
 }
-#endif

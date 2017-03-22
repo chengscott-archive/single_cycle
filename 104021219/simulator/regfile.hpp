@@ -1,5 +1,4 @@
-#ifndef REGFILE_DEF
-#define REGFILE_DEF
+#pragma once
 class regfile {
 public:
     regfile() {}
@@ -37,4 +36,3 @@ private:
     uint32_t reg_[32] = {}, HI_ = 0, LO_ = 0;
     bool HILOlock_ = false;
 };
-#endif
