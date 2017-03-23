@@ -1,5 +1,4 @@
 sll $0, $0, 0 # NOP
-addi $sp, $sp, 0xFFFF # correct SP
 addi $1, $0 -1
 addi $2, $0, 0x7FFF
 add  $3, $1, $2
