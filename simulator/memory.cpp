@@ -51,14 +51,14 @@ const uint32_t memory::loadByte(const size_t rhs) const {
 
 void memory::saveWord(const size_t lhs, const uint32_t rhs) {
     data_[lhs] = (rhs >> 24) & 0xff;
-	data_[lhs + 1] = (rhs >> 16) & 0xff;
-	data_[lhs + 2] = (rhs >> 8) & 0xff;
-	data_[lhs + 3] = rhs & 0xff;
+    data_[lhs + 1] = (rhs >> 16) & 0xff;
+    data_[lhs + 2] = (rhs >> 8) & 0xff;
+    data_[lhs + 3] = rhs & 0xff;
 }
 
 void memory::saveHalfWord(const size_t lhs, const uint32_t rhs) {
     data_[lhs] = (rhs >> 8) & 0xff;
-	data_[lhs + 1] = rhs & 0xff;
+    data_[lhs + 1] = rhs & 0xff;
 }
 
 void memory::saveByte(const size_t lhs, const uint32_t rhs) {
